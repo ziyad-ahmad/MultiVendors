@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Home | Biyyo E-commerce{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4">
+    <!-- Hero Section -->
+    <div class="bg-indigo-600 text-white text-center py-16 rounded-lg shadow-lg">
+        <h1 class="text-4xl font-bold">Welcome to Biyyo E-commerce</h1>
+        <p class="mt-2 text-lg">Shop from multiple vendors with the best deals!</p>
+        <a href="{% url 'shop' %}" class="mt-4 inline-block bg-white text-indigo-600 px-6 py-2 rounded-lg font-semibold">
+            Shop Now
+        </a>
+    </div>
+
+    <!-- Categories Section -->
+    <div class="mt-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Shop by Category</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+            {% for category in categories %}
+                <a href="{% url 'category_products' category.id %}" class="block bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition">
+                    <img src="{{ category.image.url }}" alt="{{ category.name }}" class="w-full h-32 object-cover rounded-lg">
+                    <p class="text-center font-semibold mt-2">{{ category.name }}</p>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Featured Products -->
+    <div class="mt-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Featured Products</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for product in featured_products %}
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <img src="{{ product.image.url }}" class="w-full h-48 object-cover rounded-t-lg" alt="{{ product.name }}">
+                    <div class="mt-4">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ product.name }}</h3>
+                        <p class="text-gray-700 mt-2">{{ product.description|truncatewords:15 }}</p>
+                        <p class="text-indigo-600 font-bold mt-4">${{ product.price }}</p>
+                        <a href="{% url 'product_detail' product.pk %}" class="block bg-indigo-600 text-white text-center py-2 mt-4 rounded-lg hover:bg-indigo-700">
+                            View Product
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
