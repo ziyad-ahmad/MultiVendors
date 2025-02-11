@@ -1,0 +1,44 @@
+<!-- admin/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+
+<h2>Vendors</h2>
+<ul>
+    {% for vendor in vendors %}
+    <li>
+        {{ vendor.store_name }} - {{ vendor.user.email }}
+        {% if not vendor.is_approved %}
+        <a href="{% url 'approve_vendor' vendor.id %}">Approve</a>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Products</h2>
+<ul>
+    {% for product in products %}
+    <li>
+        {{ product.name }} - {{ product.vendor.store_name }}
+        {% if not product.is_active %}
+        <a href="{% url 'approve_product' product.id %}">Approve</a>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Orders</h2>
+<ul>
+    {% for order in orders %}
+    <li>Order #{{ order.id }} - {{ order.customer.user.username }} - ${{ order.total_amount }}</li>
+    {% endfor %}
+</ul>
+
+<h2>Payments</h2>
+<ul>
+    {% for payment in payments %}
+    <li>Payment #{{ payment.id }} - {{ payment.order.id }} - ${{ payment.amount }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

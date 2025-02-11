@@ -1,0 +1,25 @@
+<!-- customer/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Customer Dashboard</h1>
+
+<h2>Products</h2>
+<ul>
+    {% for product in products %}
+    <li>
+        {{ product.name }} - ${{ product.price }}
+        <a href="{% url 'add_to_cart' product.id %}">Add to Cart</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Your Orders</h2>
+<ul>
+    {% for order in orders %}
+    <li>Order #{{ order.id }} - ${{ order.total_amount }}</li>
+    {% endfor %}
+</ul>
+
+<a href="{% url 'checkout' %}">Checkout</a>
+{% endblock %}
