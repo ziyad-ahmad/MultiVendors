@@ -51,11 +51,29 @@ def vendor_dashboard(request):
     return render(request, 'vendor/dashboard.html', context)
 
 @login_required
-def add_product(request):
+def create_product(request):
     if request.method == 'POST':
-        # Handle form submission to add a product
-        pass
-    return render(request, 'vendor/add_product.html')
+        form = ProductForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('product_list')  # Redirect to product list
+    else:
+        form = ProductForm()
+    return render(request, 'create_product.html', {'form': form})
+
+@login_required
+def update_product(request, product_id):
+    product = Product.objects.get(id=product_id)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, instance=product)
+        if form.is_valid():
+            form.save()
+            return redirect('product_detail', product_id=product_id)  # Redirect to product detail
+    else:
+        form = ProductForm(instance=product)
+    return render(request, 'update_product.html', {'form': form})
+
+
 
 @login_required
 def customer_dashboard(request):
@@ -105,12 +123,13 @@ def register_user(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)  # Log the user in after registration
+            login(request, user)  
             return redirect('home')  # Redirect to home page
     else:
         form = UserRegistrationForm()
     return render(request, 'register_user.html', {'form': form})
 
+@login_required
 def update_user(request, user_id):
     user = User.objects.get(id=user_id)
     if request.method == 'POST':
@@ -163,27 +182,6 @@ def update_customer(request, customer_id):
     else:
         form = CustomerForm(instance=customer)
     return render(request, 'update_customer.html', {'form': form})
-def create_product(request):
-    if request.method == 'POST':
-        form = ProductForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('product_list')  # Redirect to product list
-    else:
-        form = ProductForm()
-    return render(request, 'create_product.html', {'form': form})
-
-def update_product(request, product_id):
-    product = Product.objects.get(id=product_id)
-    if request.method == 'POST':
-        form = ProductForm(request.POST, instance=product)
-        if form.is_valid():
-            form.save()
-            return redirect('product_detail', product_id=product_id)  # Redirect to product detail
-    else:
-        form = ProductForm(instance=product)
-    return render(request, 'update_product.html', {'form': form})
-
 
 
 def create_order(request):
