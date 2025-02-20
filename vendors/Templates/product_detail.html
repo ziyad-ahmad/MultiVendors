@@ -1,34 +1,60 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Product Details
+    {{ product.name }} - Detail
 {% endblock title %}
 
 {% block content %}
     <div class="container mx-auto py-8">
         <!-- Product details card -->
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-lg mx-auto">
-            <!-- Product Image (if available) -->
-            
-            <img src="{{ product.image.url}}" alt="{{ product.name }}" class="w-full h-64 object-cover rounded-t-lg">
-                   
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-4xl mx-auto">
             <!-- Product Name -->
-            <h2 class="text-2xl font-semibold mt-4 text-gray-800">{{ product.name }}
-            </h2>
-            <a href="{% url 'vendors' product.added_by.id %}"><p>{{ product.added_by }}</p></a>
-            <!-- Product Price -->
-            <p class="text-xl font-bold text-green-500 mt-2">{{ product.initial_sell }}.Bir</p>
+            <h1 class="text-3xl font-semibold text-gray-800 mb-4">{{ product.name }}</h1>
 
             <!-- Product Description -->
-            <p class="text-gray-600 mt-4">{{ product.brand }}</p>
-            <p class="text-gray-600 mt-4">{{ product.status }}</p>
-            <p class="text-gray-600 mt-4">{{ product.tax_percentage }}</p>
+            <p class="text-gray-600 mb-4">{{ product.description }}</p>
+
+            <!-- Product Price -->
+            <p class="text-xl font-bold text-green-500 mb-4">Price: ${{ product.price }}</p>
+
+            <!-- Product Stock -->
+            <p class="text-gray-600 mb-4">Stock: {{ product.stock_quantity }}</p>
+
+            <!-- Product SKU -->
+            <p class="text-gray-600 mb-4">SKU: {{ product.sku }}</p>
+
+            <!-- Vendor Information -->
+            <p class="text-gray-600 mb-4">Vendor: {{ product.vendor.name }}</p>
+
+            <!-- Average Rating -->
+            <p class="text-gray-600 mb-4">Average Rating: {{ average_rating }}</p>
+
+            <!-- Product Images -->
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Images</h2>
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                {% for image in product_images %}
+                    <img src="{{ image.image.url }}" alt="{{ product.name }}" class="w-full h-48 object-cover rounded-lg">
+                {% endfor %}
+            </div>
+
+            <!-- Product Attributes -->
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Attributes</h2>
+            <ul class="list-disc list-inside mb-6">
+                {% for attribute in product_attributes %}
+                    <li class="text-gray-600">{{ attribute.attribute_name }}: {{ attribute.attribute_value }}</li>
+                {% endfor %}
+            </ul>
 
             <!-- Add to Cart Button -->
             <div class="mt-6">
                 <a href="{% url 'add_to_cart' product.id %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-300">
                     Add to Cart
                 </a>
+            </div>
+
+            <!-- Back to Home Link -->
+            <div class="mt-6">
+                <a href="{% url 'home' %}" class="text-blue-500 hover:underline">Back to Home</a>
             </div>
         </div>
     </div>
