@@ -25,8 +25,12 @@ SECRET_KEY = 'django-insecure-*9zotbxvhv!kyb!)#ph0d80&-opu0gj&w(s#zc2kdbz&#6f70j
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+CART_SESSION_ID = 'cart'
+SESSION_COOKIE_AGE = 86400
 
+ALLOWED_HOSTS = []
+LOGIN_REDIRECT_PAGE= 'home'
+LOGOUT_REDIRECT_URL = 'login'
 
 # Application definition
 
@@ -38,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'vendors',
+    'compressor',
 ]
 
 MIDDLEWARE = [
@@ -55,7 +60,7 @@ ROOT_URLCONF = 'MultiVendors.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -81,6 +86,11 @@ DATABASES = {
     }
 }
 
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'compressor.finders.CompressorFinder',
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -115,8 +125,15 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]  # If you have custom static files
+STATIC_ROOT = BASE_DIR / "staticfiles"   # Directory to collect static files for production
+MEDIA_URL= 'media/'
+MEDIA_ROOT = BASE_DIR/'media'
 
-STATIC_URL = 'static/'
+COMPRESS_ROOT = BASE_DIR / 'static'
+COMPRESS_ENABLED = True
+STATICFILES_FINDERS = ('compressor.finders.CompressorFinder',)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

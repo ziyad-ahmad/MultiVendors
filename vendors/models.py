@@ -67,6 +67,7 @@ class Customer(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100, unique=True, default='default-category')
     description = models.TextField(blank=True, null=True)
     parent_category = models.ForeignKey('self', on_delete=models.SET_NULL, blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -80,6 +81,7 @@ class Category(models.Model):
 class Product(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=255)
+    sluge = models.SlugField(max_length=255, unique=True, default='prduct_name')
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.IntegerField()
@@ -145,7 +147,6 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name} in Order #{self.order.id}"
-
 
 class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [

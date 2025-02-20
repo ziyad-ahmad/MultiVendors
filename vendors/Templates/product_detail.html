@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Product Details
+{% endblock title %}
+
+{% block content %}
+    <div class="container mx-auto py-8">
+        <!-- Product details card -->
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-lg mx-auto">
+            <!-- Product Image (if available) -->
+            
+            <img src="{{ product.image.url}}" alt="{{ product.name }}" class="w-full h-64 object-cover rounded-t-lg">
+                   
+            <!-- Product Name -->
+            <h2 class="text-2xl font-semibold mt-4 text-gray-800">{{ product.name }}
+            </h2>
+            <a href="{% url 'vendors' product.added_by.id %}"><p>{{ product.added_by }}</p></a>
+            <!-- Product Price -->
+            <p class="text-xl font-bold text-green-500 mt-2">{{ product.initial_sell }}.Bir</p>
+
+            <!-- Product Description -->
+            <p class="text-gray-600 mt-4">{{ product.brand }}</p>
+            <p class="text-gray-600 mt-4">{{ product.status }}</p>
+            <p class="text-gray-600 mt-4">{{ product.tax_percentage }}</p>
+
+            <!-- Add to Cart Button -->
+            <div class="mt-6">
+                <a href="{% url 'add_to_cart' product.id %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors duration-300">
+                    Add to Cart
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

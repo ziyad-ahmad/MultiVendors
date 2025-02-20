@@ -1,14 +1,17 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
-from .Forms import UserRegistrationForm, UserUpdateForm, VendorForm
-from .Forms import CustomerForm, ProductForm, OrderForm
-from .models import User, Vendor, Customer, Product, Order, Category,Payment,OrderItem
 from django.contrib.auth.decorators import user_passes_test, login_required
+from django.core.exceptions import PermissionDenied
+from django.contrib import messages
+from .cart import Cart
+from .Forms import UserRegistrationForm, UserUpdateForm, VendorForm, CustomerForm, ProductForm, OrderForm
+from .models import User, Vendor, Customer, Product, Order, Category, Payment, OrderItem, Category
 
-# Check if the user is an admin
+# Helper function to check if the user is an admin
 def is_admin(user):
     return user.is_authenticated and user.role == 'admin'
 
+# Admin Dashboard
 @user_passes_test(is_admin)
 def admin_dashboard(request):
     vendors = Vendor.objects.all()
@@ -24,22 +27,28 @@ def admin_dashboard(request):
     }
     return render(request, 'admin/dashboard.html', context)
 
+# Approve Vendor
 @user_passes_test(is_admin)
 def approve_vendor(request, vendor_id):
-    vendor = Vendor.objects.get(id=vendor_id)
+    vendor = get_object_or_404(Vendor, id=vendor_id)
     vendor.is_approved = True
     vendor.save()
     return redirect('admin_dashboard')
 
+# Approve Product
 @user_passes_test(is_admin)
 def approve_product(request, product_id):
-    product = Product.objects.get(id=product_id)
+    product = get_object_or_404(Product, id=product_id)
     product.is_active = True
     product.save()
     return redirect('admin_dashboard')
 
+# Vendor Dashboard
 @login_required
 def vendor_dashboard(request):
+    if not hasattr(request.user, 'vendor'):
+        raise PermissionDenied("You are not a vendor.")
+    
     vendor = request.user.vendor
     products = Product.objects.filter(vendor=vendor)
     orders = Order.objects.filter(items__product__vendor=vendor).distinct()
@@ -50,33 +59,66 @@ def vendor_dashboard(request):
     }
     return render(request, 'vendor/dashboard.html', context)
 
+# Create Product (Vendor)
 @login_required
 def create_product(request):
+    if not hasattr(request.user, 'vendor'):
+        raise PermissionDenied("You are not a vendor.")
+    
     if request.method == 'POST':
         form = ProductForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('product_list')  # Redirect to product list
+            product = form.save(commit=False)
+            product.vendor = request.user.vendor
+            product.save()
+            return redirect('vendor_dashboard')
     else:
         form = ProductForm()
     return render(request, 'create_product.html', {'form': form})
 
+# Update Product (Vendor)
 @login_required
 def update_product(request, product_id):
-    product = Product.objects.get(id=product_id)
+    product = get_object_or_404(Product, id=product_id)
+    if product.vendor != request.user.vendor:
+        raise PermissionDenied("You do not have permission to edit this product.")
+    
     if request.method == 'POST':
         form = ProductForm(request.POST, instance=product)
         if form.is_valid():
             form.save()
-            return redirect('product_detail', product_id=product_id)  # Redirect to product detail
+            return redirect('vendor_dashboard')
     else:
         form = ProductForm(instance=product)
     return render(request, 'update_product.html', {'form': form})
 
+def category_home(request):
+    categories = Category.objects.all()
+    products = Product.objects.exclude(status='DELETE')
+    return render(request, 'Home.html', {'categories': categories, 'products': products})
+
+def category_product(request, category_id):
+
+    category = get_object_or_404(Category, id=category_id, is_active=True)
+    # Retrieve all active products under the selected category
+    products = Product.objects.filter(categories=category, is_active=True).select_related('vendor').prefetch_related('images', 'attributes')
+    context = {
+        'category': category,
+        'products': products,
+    }
+    return render(request, 'home.html', context)
+
+def product_detail(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    return render(request, 'product_detail.html', {'product': product})
 
 
+# Customer Dashboard
 @login_required
 def customer_dashboard(request):
+    if not hasattr(request.user, 'customer'):
+        raise PermissionDenied("You are not a customer.")
+    
     products = Product.objects.filter(is_active=True)
     orders = Order.objects.filter(customer=request.user.customer)
 
@@ -86,122 +128,190 @@ def customer_dashboard(request):
     }
     return render(request, 'customer/dashboard.html', context)
 
+# Add to Cart (Customer)
 @login_required
+
 def add_to_cart(request, product_id):
-    product = Product.objects.get(id=product_id)
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-    
-    if not created:
-        cart_item.quantity += 1
-        cart_item.save()
-    
-    return redirect('customer_dashboard')
+    cart = Cart(request)
+    cart.add(product_id=product_id, quantity=1)
+    messages.success(request, 'Product added to cart!')
+    return redirect('catagory_home')
 
-@login_required
+
+def cart_view(request):
+    cart = Cart(request)
+    items = cart.get_items()
+    subtotal = cart.get_total_price()
+    shipping_estimate = subtotal * 0.02
+    tax_estimate = subtotal * 0.1
+    order_total = subtotal + shipping_estimate + tax_estimate
+
+    context = {
+        'cart': cart,
+        'items': items,
+        'subtotal': subtotal,
+        'shipping_estimate': shipping_estimate,
+        'tax_estimate': tax_estimate,
+        'order_total': order_total,
+    }
+    return render(request, 'cart_view.html', context)
+
+
+def update_cart(request, product_id):
+    cart = Cart(request)
+    action = request.POST.get('action')
+    current_quantity = cart.get_item_quantity(product_id)
+
+    if action == 'increment':
+        new_quantity = current_quantity + 1
+    elif action == 'decrement':
+        new_quantity = max(current_quantity - 1, 1)
+    else:
+        new_quantity = current_quantity
+
+    cart.add(product_id=product_id, quantity=new_quantity, update_quantity=True)
+    messages.success(request, 'Cart updated successfully!')
+    return redirect('cart_view')
+
+
+def remove_from_cart(request, product_id):
+    cart = Cart(request)
+    cart.remove(product_id=product_id)
+    messages.success(request, 'Product removed from cart.')
+    return redirect('cart_view')
+
+
 def checkout(request):
-    cart = Cart.objects.get(user=request.user)
-    order = Order.objects.create(customer=request.user.customer, total_amount=cart.total_price())
-    
-    for item in cart.items.all():
-        OrderItem.objects.create(order=order, product=item.product, quantity=item.quantity, price=item.product.price)
-    
-    cart.items.all().delete()
-    return redirect('order_detail', order_id=order.id)
+    cart = Cart(request)
+    form = OrderForm()
+    if request.method == 'POST':
+        form = OrderForm(request.POST)
+        if form.is_valid():
+            total_price = sum(
+                item['product'].initial_sell * int(item['quantity']) for item in cart.get_items()
+            )
+            order = form.save(commit=False)
+            order.created_by = request.user
+            order.paid_amount = total_price
+            order.save()
 
+            for item in cart.get_items():
+                product = item['product']
+                quantity = int(item['quantity'])
+                price = product.initial_sell * quantity
+                OrderItem.objects.create(order=order, product=product, price=price, quantity=quantity)
+            cart.clear()
+            messages.success(request, "Your order has been placed successfully!")
+            return redirect('myaccount')
+        else:
+            messages.error(request, "There was an issue with your order. Please try again.")
+
+    return render(request, 'checkout.html', {'cart': cart, 'form': form})
+
+# Home Page
 def home(request):
-    featured_products = Product.objects.filter(is_featured=True)[:6]  # Show only 6 featured products
-    categories = Category.objects.all()  
+    featured_products = Product.objects.filter(is_featured=True)[:6]
+    categories = Category.objects.all()
+    
     context = {
         'featured_products': featured_products,
         'categories': categories,
     }
     return render(request, 'home.html', context)
 
+# User Registration
 def register_user(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)  
-            return redirect('home')  # Redirect to home page
+            login(request, user)
+            return redirect('home')
     else:
         form = UserRegistrationForm()
     return render(request, 'register_user.html', {'form': form})
 
+# Update User Profile
 @login_required
 def update_user(request, user_id):
-    user = User.objects.get(id=user_id)
+    user = get_object_or_404(User, id=user_id)
+    if request.user != user:
+        raise PermissionDenied("You do not have permission to edit this profile.")
+    
     if request.method == 'POST':
         form = UserUpdateForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
-            return redirect('user_profile', user_id=user_id)  # Redirect to user profile
+            return redirect('user_profile', user_id=user_id)
     else:
         form = UserUpdateForm(instance=user)
     return render(request, 'update_user.html', {'form': form})
 
+# Create Vendor
 def create_vendor(request):
     if request.method == 'POST':
         form = VendorForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('vendor_list')  # Redirect to vendor list
+            return redirect('vendor_list')
     else:
         form = VendorForm()
     return render(request, 'create_vendor.html', {'form': form})
 
+# Update Vendor
 def update_vendor(request, vendor_id):
-    vendor = Vendor.objects.get(id=vendor_id)
+    vendor = get_object_or_404(Vendor, id=vendor_id)
     if request.method == 'POST':
         form = VendorForm(request.POST, instance=vendor)
         if form.is_valid():
             form.save()
-            return redirect('vendor_detail', vendor_id=vendor_id)  # Redirect to vendor detail
+            return redirect('vendor_detail', vendor_id=vendor_id)
     else:
         form = VendorForm(instance=vendor)
     return render(request, 'update_vendor.html', {'form': form})
 
+# Create Customer
 def create_customer(request):
     if request.method == 'POST':
         form = CustomerForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('customer_list')  # Redirect to customer list
+            return redirect('customer_list')
     else:
         form = CustomerForm()
     return render(request, 'create_customer.html', {'form': form})
 
+# Update Customer
 def update_customer(request, customer_id):
-    customer = Customer.objects.get(id=customer_id)
+    customer = get_object_or_404(Customer, id=customer_id)
     if request.method == 'POST':
         form = CustomerForm(request.POST, instance=customer)
         if form.is_valid():
             form.save()
-            return redirect('customer_detail', customer_id=customer_id)  # Redirect to customer detail
+            return redirect('customer_detail', customer_id=customer_id)
     else:
         form = CustomerForm(instance=customer)
     return render(request, 'update_customer.html', {'form': form})
 
-
+# Create Order
 def create_order(request):
     if request.method == 'POST':
         form = OrderForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('order_list')  # Redirect to order list
+            return redirect('order_list')
     else:
         form = OrderForm()
     return render(request, 'create_order.html', {'form': form})
 
+# Update Order
 def update_order(request, order_id):
-    order = Order.objects.get(id=order_id)
+    order = get_object_or_404(Order, id=order_id)
     if request.method == 'POST':
         form = OrderForm(request.POST, instance=order)
         if form.is_valid():
             form.save()
-            return redirect('order_detail', order_id=order_id)  # Redirect to order detail
+            return redirect('order_detail', order_id=order_id)
     else:
         form = OrderForm(instance=order)
     return render(request, 'update_order.html', {'form': form})
-
