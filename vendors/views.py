@@ -108,9 +108,44 @@ def category_product(request, category_id):
     }
     return render(request, 'home.html', context)
 
-def product_detail(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-    return render(request, 'product_detail.html', {'product': product})
+def home(request):
+    # Fetch the latest five active products
+    latest_products = Product.objects.filter(is_active=True).order_by('-created_at')[:5]
+    # Fetch the top five active products by rating
+    high_rated_products = Product.objects.filter(is_active=True).order_by('-rating')[:5]
+
+
+    for product in latest_products:
+        product.primary_image = product.images.first()
+
+    for product in high_rated_products:
+        product.primary_image = product.images.first()
+
+    context = {
+        'latest_products': latest_products,
+        'high_rated_products': high_rated_products,
+    }
+    
+    return render(request, 'home.html', context)
+
+
+def product_detail(request, product_id):
+    # Fetch the product or return a 404 error if not found
+    product = get_object_or_404(Product, id=product_id)
+    
+     # Fetch all images for the product
+    product_images = product.images.all()
+    product_attributes = product.attributes.all()
+    average_rating = product.rating
+    
+    context = {
+        'product': product,
+        'product_images': product_images,
+        'product_attributes': product_attributes,
+        'average_rating': average_rating,
+    }
+    
+    return render(request, 'product_detail.html', context)
 
 
 # Customer Dashboard

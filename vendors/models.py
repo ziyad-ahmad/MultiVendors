@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils import timezone
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Admin'),
@@ -81,6 +82,7 @@ class Category(models.Model):
 class Product(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=255)
+    image = models.ForeignKey('ProductImage', on_delete=models.SET_NULL, blank=True, null=True, related_name='products')
     sluge = models.SlugField(max_length=255, unique=True, default='prduct_name')
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -88,10 +90,11 @@ class Product(models.Model):
     sku = models.CharField(max_length=50, unique=True)
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    rating = models.ManyToManyField('Review', related_name='products',through='ReviewProduct')
     created_at = models.DateTimeField(default=timezone.now)  # Updated
     updated_at = models.DateTimeField(default=timezone.now)  # Updated
     categories = models.ManyToManyField(Category, related_name='products')
+    addtional_info = models.ForeignKey('ProductAttribute', on_delete=models.SET_NULL, blank=True, null=True, related_name='products')
 
     def __str__(self):
         return self.name
@@ -191,14 +194,19 @@ class Delivery(models.Model):
     def __str__(self):
         return f"Delivery for Order #{self.order.id}"
 
-
 class Review(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews_set')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='reviews')
-    rating = models.IntegerField()
+    rating = models.PositiveSmallIntegerField(max_length=5, default=1, validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)  # Updated
     updated_at = models.DateTimeField(default=timezone.now)  # Updated
 
     def __str__(self):
         return f"Review for {self.product.name} by {self.customer.user.username}"
+    
+class ReviewProduct(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews_product')
+    revies = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='reviews')
+    
+
