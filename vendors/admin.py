@@ -26,25 +26,33 @@ class CustomerAdmin(admin.ModelAdmin):
 # Category Admin
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description', 'parent_category')
+    list_display = ('name', 'slug', 'parent_category')
     list_per_page = 20
     list_filter = ('name', 'parent_category')
 
-# Product Admin
-@admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'price', 'stock_quantity', 'vendor', 'is_active')
-    list_per_page = 20
-    list_filter = ('vendor', 'is_active', 'categories')
-    filter_horizontal = ('categories',)  # For easier selection of categories
 
 # ProductImage Admin
-@admin.register(ProductImage)
-class ProductImageAdmin(admin.ModelAdmin):
-    list_display = ('product', 'image', 'is_primary')
-    list_per_page = 20
-    list_filter = ('product', 'is_primary')
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 3  # Number of empty forms to display
 
+class ProductAttributeInline(admin.TabularInline):
+    model = ProductAttribute
+    extra = 2  # Number of empty forms to display
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    inlines = [ProductImageInline, ProductAttributeInline]
+    list_display = ('name', 'vendor', 'price', 'is_active', 'is_featured')
+    search_fields = ('name', 'description')
+    list_filter = ('is_active', 'is_featured', 'categories')
+
+    def save_model(self, request, obj, form, change):
+        # Save the Product instance first to generate a primary key
+        super().save_model(request, obj, form, change)
+        
+        # Now you can set related fields (e.g., ProductImage, ProductAttribute)
+        # This is handled automatically by the inlines
 # ProductAttribute Admin
 @admin.register(ProductAttribute)
 class ProductAttributeAdmin(admin.ModelAdmin):
@@ -83,6 +91,10 @@ class DeliveryAdmin(admin.ModelAdmin):
 # Review Admin
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ('product', 'customer', 'rating', 'created_at')
+    list_display = ('id', 'customer', 'get_product', 'rating', 'created_at')
     list_per_page = 20
     list_filter = ('rating', 'created_at')
+
+    def get_product(self, obj):
+        return ", ".join([product.name for product in obj.reviews_product.all()])
+    get_product.short_description = 'Product'

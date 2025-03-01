@@ -1,24 +1,26 @@
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from .views import (
-    home, register_user, update_user,
+    genHome, register_user, update_user,
     create_vendor, update_vendor,
     create_customer, update_customer,
-    create_product, update_product, category_home, category_product,
+    create_product, update_product, category_home, 
     create_order, update_order,
     admin_dashboard, approve_vendor, approve_product,
     vendor_dashboard, customer_dashboard,
-    add_to_cart, checkout,cart_view,update_cart, remove_from_cart,category_product,product_detail
+    add_to_cart, checkout, cart_view, update_cart, remove_from_cart, product_detail
 )
 
 urlpatterns = [
     # Home Page
-    path('', home, name='home'),
+    path('', genHome, name='genHome'),  # General home page
+    path('home/', category_home, name='category_home'),  # Display all products
+    path('category/<int:category_id>/', category_home, name='category_product'),  # Display products by category
+
     path('product/<int:product_id>/', product_detail, name='product_detail'),
-    path("login/", home, name="login"),
-    path("logout/", home, name="logout"),
-    path('category/<int:category_id>/', category_product, name='category_products'),
-    path('category/<int:category_id>/<int:product_id>/', product_detail, name='product_detail'),
-    #cart Management
+
+    # Cart Management
     path('cart/', cart_view, name='cart_view'),
     path('cart/add/<int:product_id>/', add_to_cart, name='add_to_cart'),
     path('cart/update/<int:product_id>/', update_cart, name='update_cart'),
@@ -38,14 +40,10 @@ urlpatterns = [
     path('customer/create/', create_customer, name='create_customer'),
     path('customer/update/<int:customer_id>/', update_customer, name='update_customer'),
     path('customer/dashboard/', customer_dashboard, name='customer_dashboard'),
-    path('customer/cart/add/<int:product_id>/', add_to_cart, name='add_to_cart'),
-    path('customer/checkout/', checkout, name='checkout'),
 
     # Product URLs
     path('product/create/', create_product, name='create_product'),
     path('product/update/<int:product_id>/', update_product, name='update_product'),
-    path('category/', category_home, name='category_home'),
-    path('category/<int:pk>/', category_product, name='category_product'),
 
     # Order URLs
     path('order/create/', create_order, name='create_order'),
@@ -55,4 +53,6 @@ urlpatterns = [
     path('admin/dashboard/', admin_dashboard, name='admin_dashboard'),
     path('admin/approve-vendor/<int:vendor_id>/', approve_vendor, name='approve_vendor'),
     path('admin/approve-product/<int:product_id>/', approve_product, name='approve_product'),
-]
+
+    # Static and Media Files
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

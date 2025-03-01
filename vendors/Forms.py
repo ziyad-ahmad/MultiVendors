@@ -189,10 +189,12 @@ class OrderForm(forms.ModelForm):
         'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500'
     }))
 
+
+    
 class ReviewForm(forms.ModelForm):
     class Meta:
         model = Review
-        fields = ['product', 'customer', 'rating', 'comment']
+        fields = ['product', 'customer', 'comment','rating']
     
     product = forms.ModelChoiceField(queryset=Product.objects.all(), widget=forms.Select(attrs={
         'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500'
@@ -212,3 +214,8 @@ class ReviewForm(forms.ModelForm):
         'placeholder': 'Your Comment',
         'rows': 4
     }))
+    def clean_rating(self):
+        rating = self.cleaned_data['rating']
+        if rating < 1 or rating > 5:
+            raise forms.ValidationError('Rating must be between 1 and 5.')
+        return rating

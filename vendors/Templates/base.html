@@ -16,7 +16,7 @@
             <div class="flex justify-between h-16 items-center">
                 <!-- Left Section: Logo -->
                 <div class="flex items-center">
-                    <a href="{% url 'home' %}" class="flex items-center space-x-3">
+                    <a href="{% url 'genHome' %}" class="flex items-center space-x-3">
                         <img class="h-10 w-auto" src="{% static 'Images/logo1.jfif' %}" alt="Your Company Logo">
                         <span class="text-white font-semibold text-2xl">Biyyo</span>
                     </a>
@@ -64,18 +64,18 @@
                             <!-- Dropdown Menu -->
                             <div id="dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
                                 <div class="py-1">
-                                    <a href="{% url 'myaccount' %}" class="block px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition duration-200">My Account</a>
+                                    <a href=" " class="block px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition duration-200">My Account</a>
                                     {% if request.user.userprofile.is_vendor %}
-                                        <a href="{% url 'my_store' %}" class="block px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition duration-200">My Store</a>
+                                        <a href=" " class="block px-4 py-2 text-gray-700 hover:bg-blue-500 hover:text-white transition duration-200">My Store</a>
                                     {% endif %}
-                                    <form id="logout-form" action="{% url 'logout' %}" method="POST" style="display: inline;">
+                                    <form id="logout-form" action=" " method="POST" style="display: inline;">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-link">Logout</button>
                                     </form>
                                 </div>
                             </div>
                         {% else %}
-                            <a href="{% url 'login' %}" class="text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition duration-200">Login</a>
+                            <a href=" " class="text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition duration-200">Login</a>
                         {% endif %}
                     </div>
 
@@ -126,7 +126,7 @@
                 <div>
                     <h3 class="text-lg font-bold mb-2">Links</h3>
                     <ul>
-                        <li><a href="{% url 'home' %}" class="hover:text-white">Home</a></li>
+                        <li><a href="{% url 'category_home' %}" class="hover:text-white">Home</a></li>
                         <li><a href="" class="hover:text-white">About Us</a></li>
                         <li><a href="" class="hover:text-white">Contact</a></li>
                         <li><a href="" class="hover:text-white">Terms of Service</a></li>

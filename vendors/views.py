@@ -59,6 +59,8 @@ def vendor_dashboard(request):
     }
     return render(request, 'vendor/dashboard.html', context)
 
+
+
 # Create Product (Vendor)
 @login_required
 def create_product(request):
@@ -92,57 +94,72 @@ def update_product(request, product_id):
         form = ProductForm(instance=product)
     return render(request, 'update_product.html', {'form': form})
 
-def category_home(request):
-    categories = Category.objects.all()
-    products = Product.objects.exclude(status='DELETE')
-    return render(request, 'Home.html', {'categories': categories, 'products': products})
 
-def category_product(request, category_id):
 
-    category = get_object_or_404(Category, id=category_id, is_active=True)
-    # Retrieve all active products under the selected category
-    products = Product.objects.filter(categories=category, is_active=True).select_related('vendor').prefetch_related('images', 'attributes')
-    context = {
-        'category': category,
-        'products': products,
-    }
-    return render(request, 'home.html', context)
-
-def home(request):
+def genHome(request):
     # Fetch the latest five active products
     latest_products = Product.objects.filter(is_active=True).order_by('-created_at')[:5]
-    # Fetch the top five active products by rating
+    
+    # Fetch the top five active products by rating (assuming rating is a field or calculated value)
     high_rated_products = Product.objects.filter(is_active=True).order_by('-rating')[:5]
 
-
+    # Add primary image to each product
     for product in latest_products:
-        product.primary_image = product.images.first()
+        primary_image = product.images.filter(is_primary=True).first()
+        product.primary_image = primary_image.image.url if primary_image else None
 
     for product in high_rated_products:
-        product.primary_image = product.images.first()
+        primary_image = product.images.filter(is_primary=True).first()
+        product.primary_image = primary_image.image.url if primary_image else None
 
     context = {
         'latest_products': latest_products,
         'high_rated_products': high_rated_products,
     }
     
+    return render(request, 'genHome.html', context)
+
+
+def category_home(request, category_id=None):
+    # Fetch all active categories
+    categories = Category.objects.filter(is_active=True)
+    
+    
+    if category_id:
+        category = get_object_or_404(Category, id=category_id, is_active=True)
+        products = Product.objects.filter(categories=category, is_active=True).select_related('vendor').prefetch_related('images', 'attributes')
+    else:
+        # If no category is selected, fetch all active products
+        category = None
+        products = Product.objects.filter(is_active=True).select_related('vendor').prefetch_related('images', 'attributes')
+    
+    context = {
+        'categories': categories,
+        'products': products,
+        'category': category,  # Pass the selected category (if any)
+    }
     return render(request, 'home.html', context)
 
 
 def product_detail(request, product_id):
-    # Fetch the product or return a 404 error if not found
     product = get_object_or_404(Product, id=product_id)
-    
-     # Fetch all images for the product
     product_images = product.images.all()
     product_attributes = product.attributes.all()
-    average_rating = product.rating
     
+    average_rating = product.rating
+
+    related_products = Product.objects.filter(categories__in=product.categories.all(), is_active=True).exclude(id=product.id).distinct()[:5]
+    
+    for related_product in related_products:
+        primary_image = related_product.images.filter(is_primary=True).first()
+        related_product.primary_image = primary_image.image.url if primary_image else None
+
     context = {
         'product': product,
         'product_images': product_images,
         'product_attributes': product_attributes,
         'average_rating': average_rating,
+        'related_products': related_products,
     }
     
     return render(request, 'product_detail.html', context)
@@ -170,7 +187,7 @@ def add_to_cart(request, product_id):
     cart = Cart(request)
     cart.add(product_id=product_id, quantity=1)
     messages.success(request, 'Product added to cart!')
-    return redirect('catagory_home')
+    return redirect('category_home')
 
 
 def cart_view(request):
@@ -189,7 +206,7 @@ def cart_view(request):
         'tax_estimate': tax_estimate,
         'order_total': order_total,
     }
-    return render(request, 'cart_view.html', context)
+    return render(request, 'cart_vew.html', context)
 
 
 def update_cart(request, product_id):
