@@ -7,7 +7,7 @@ from .views import (
     create_customer, update_customer,
     create_product, update_product, category_home, 
     create_order, update_order,
-    admin_dashboard, approve_vendor, approve_product,
+    admin_dashboard, admin_vendor_management, 
     vendor_dashboard, customer_dashboard,
     add_to_cart, checkout, cart_view, update_cart, remove_from_cart, product_detail
 )
@@ -17,7 +17,6 @@ urlpatterns = [
     path('', genHome, name='genHome'),  # General home page
     path('home/', category_home, name='category_home'),  # Display all products
     path('category/<int:category_id>/', category_home, name='category_product'),  # Display products by category
-
     path('product/<int:product_id>/', product_detail, name='product_detail'),
 
     # Cart Management
@@ -50,9 +49,7 @@ urlpatterns = [
     path('order/update/<int:order_id>/', update_order, name='update_order'),
 
     # Admin URLs
-    path('admin/dashboard/', admin_dashboard, name='admin_dashboard'),
-    path('admin/approve-vendor/<int:vendor_id>/', approve_vendor, name='approve_vendor'),
-    path('admin/approve-product/<int:product_id>/', approve_product, name='approve_product'),
-
+    path('admins/dashboard/', admin_dashboard, name='admin_dashboard'),
+    path('admins/vendor-management/', admin_vendor_management, name='admin_vendor_management'),
     # Static and Media Files
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

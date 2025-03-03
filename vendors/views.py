@@ -3,9 +3,14 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.core.exceptions import PermissionDenied
 from django.contrib import messages
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.mail import send_mail
+from django.contrib.auth.forms import UserCreationForm
 from .cart import Cart
-from .Forms import UserRegistrationForm, UserUpdateForm, VendorForm, CustomerForm, ProductForm, OrderForm
-from .models import User, Vendor, Customer, Product, Order, Category, Payment, OrderItem, Category
+from .Forms import UserRegistrationForm, UserUpdateForm, CustomerForm, ProductForm, OrderForm, VendorRegistrationForm, ProductImageForm
+from .models import User, Vendor, VendorDocument, Customer, Product, Order, Category, Payment, OrderItem, Category, ProductImage
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
 
 # Helper function to check if the user is an admin
 def is_admin(user):
@@ -26,22 +31,102 @@ def admin_dashboard(request):
         'payments': payments,
     }
     return render(request, 'admin/dashboard.html', context)
+def vendor_registration(request):
+    if request.method == 'POST':
+        user_form = UserCreationForm(request.POST)
+        vendor_form = VendorRegistrationForm(request.POST, request.FILES)
+        if user_form.is_valid() and vendor_form.is_valid():
+            user = user_form.save(commit=False)
+            user.role = 'vendor'
+            user.save()
+            vendor = vendor_form.save(commit=False)
+            vendor.user = user
+            vendor.save()
+            for file in request.FILES.getlist('documents'):
+                VendorDocument.objects.create(vendor=vendor, document=file)
+            login(request, user)
+            return redirect('vendor_dashboard')
+    else:
+        user_form = UserCreationForm()
+        vendor_form = VendorRegistrationForm()
+    return render(request, 'vendor_registration.html', {'user_form': user_form, 'vendor_form': vendor_form})
 
-# Approve Vendor
-@user_passes_test(is_admin)
-def approve_vendor(request, vendor_id):
-    vendor = get_object_or_404(Vendor, id=vendor_id)
-    vendor.is_approved = True
-    vendor.save()
-    return redirect('admin_dashboard')
+@user_passes_test(lambda u: u.is_superuser)
+def admin_vendor_management(request):
+    """
+    View for managing vendors, including searching, pagination, document viewing, and approval/rejection.
+    """
+    # Fetch all vendors
+    vendors = Vendor.objects.all()
 
-# Approve Product
-@user_passes_test(is_admin)
-def approve_product(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    product.is_active = True
-    product.save()
-    return redirect('admin_dashboard')
+    # Search functionality
+    search_query = request.GET.get('search')
+    if search_query:
+        vendors = vendors.filter(store_name__icontains=search_query) | vendors.filter(location__icontains=search_query)
+
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(vendors, 10)  # Show 10 vendors per page
+    try:
+        vendors = paginator.page(page)
+    except PageNotAnInteger:
+        vendors = paginator.page(1)
+    except EmptyPage:
+        vendors = paginator.page(paginator.num_pages)
+
+    # Handle viewing vendor documents
+    vendor_id = request.GET.get('vendor_id')
+    if vendor_id:
+        vendor = get_object_or_404(Vendor, id=vendor_id)
+        documents = VendorDocument.objects.filter(vendor=vendor)
+        return render(request, 'admin/admin_vendor_management.html', {
+            'vendors': vendors,  # Paginated vendor list
+            'selected_vendor': vendor,  # Selected vendor for document viewing
+            'documents': documents,  # Vendor documents
+            'search_query': search_query,  # Current search query
+        })
+
+    # Handle approving or rejecting a vendor
+    if request.method == 'POST':
+        vendor_id = request.POST.get('vendor_id')
+        vendor = get_object_or_404(Vendor, id=vendor_id)
+
+        if 'approve_vendor' in request.POST:
+            vendor.is_approved = True
+            vendor.save()
+            messages.success(request, f"{vendor.store_name} has been approved.")
+
+            # Send email notification to the vendor
+            send_mail(
+                'Vendor Approval Notification',
+                f'Congratulations! Your vendor account for {vendor.store_name} has been approved.',
+                'admin@example.com',
+                [vendor.user.email],
+                fail_silently=False,
+            )
+
+        elif 'reject_vendor' in request.POST:
+            rejection_reason = request.POST.get('rejection_reason')
+            vendor.is_approved = False
+            vendor.save()
+            messages.success(request, f"{vendor.store_name} has been rejected. Reason: {rejection_reason}")
+
+            # Send email notification to the vendor
+            send_mail(
+                'Vendor Rejection Notification',
+                f'We regret to inform you that your vendor account for {vendor.store_name} has been rejected. Reason: {rejection_reason}',
+                'admin@example.com',
+                [vendor.user.email],
+                fail_silently=False,
+            )
+
+        return redirect('admin_vendor_management')
+
+    # Default: Display the list of all vendors
+    return render(request, 'admin/admin_vendor_management.html', {
+        'vendors': vendors,  # Paginated vendor list
+        'search_query': search_query,  # Current search query
+    })
 
 # Vendor Dashboard
 @login_required
@@ -51,7 +136,7 @@ def vendor_dashboard(request):
     
     vendor = request.user.vendor
     products = Product.objects.filter(vendor=vendor)
-    orders = Order.objects.filter(items__product__vendor=vendor).distinct()
+    orders = Order.objects.filter(items__product__vendor=vendor).all()
 
     context = {
         'products': products,
@@ -60,31 +145,41 @@ def vendor_dashboard(request):
     return render(request, 'vendor/dashboard.html', context)
 
 
-
-# Create Product (Vendor)
-@login_required
+# Add Product
 def create_product(request):
+    # Check if the user is a vendor
     if not hasattr(request.user, 'vendor'):
         raise PermissionDenied("You are not a vendor.")
-    
+
     if request.method == 'POST':
         form = ProductForm(request.POST)
+        img_form = ProductImageForm(request.POST, request.FILES)
+        
         if form.is_valid():
+            # Save the product with the vendor association
             product = form.save(commit=False)
             product.vendor = request.user.vendor
             product.save()
+
+            # Handle product images
+            if img_form.is_valid():
+                for file in request.FILES.getlist('image'):
+                    ProductImage.objects.create(product=product, image=file)
+            
             return redirect('vendor_dashboard')
     else:
         form = ProductForm()
-    return render(request, 'create_product.html', {'form': form})
+        img_form = ProductImageForm()
 
-# Update Product (Vendor)
+    return render(request, 'vendor/add_product.html', {'form': form, 'imgForm': img_form})
+
 @login_required
 def update_product(request, product_id):
+    # Retrieve the product or return a 404 error
     product = get_object_or_404(Product, id=product_id)
     if product.vendor != request.user.vendor:
         raise PermissionDenied("You do not have permission to edit this product.")
-    
+
     if request.method == 'POST':
         form = ProductForm(request.POST, instance=product)
         if form.is_valid():
@@ -92,25 +187,29 @@ def update_product(request, product_id):
             return redirect('vendor_dashboard')
     else:
         form = ProductForm(instance=product)
+
     return render(request, 'update_product.html', {'form': form})
 
 
-
 def genHome(request):
-    # Fetch the latest five active products
-    latest_products = Product.objects.filter(is_active=True).order_by('-created_at')[:5]
     
-    # Fetch the top five active products by rating (assuming rating is a field or calculated value)
-    high_rated_products = Product.objects.filter(is_active=True).order_by('-rating')[:5]
+    latest_products = Product.objects.filter(is_active=True).order_by('-created_at')[:5].prefetch_related(
+        'images'
+    )
+    
+    high_rated_products = Product.objects.filter(is_active=True).order_by('-rating')[:5].prefetch_related(
+        'images'
+    )
 
-    # Add primary image to each product
-    for product in latest_products:
-        primary_image = product.images.filter(is_primary=True).first()
-        product.primary_image = primary_image.image.url if primary_image else None
+    # Function to attach primary image URLs to products
+    def attach_primary_image(products):
+        for product in products:
+            primary_image = next((img for img in product.images.all() if img.is_primary), None)
+            product.primary_image = primary_image.image.url if primary_image else None
 
-    for product in high_rated_products:
-        primary_image = product.images.filter(is_primary=True).first()
-        product.primary_image = primary_image.image.url if primary_image else None
+    # Attach primary images to both product lists
+    attach_primary_image(latest_products)
+    attach_primary_image(high_rated_products)
 
     context = {
         'latest_products': latest_products,
@@ -119,11 +218,9 @@ def genHome(request):
     
     return render(request, 'genHome.html', context)
 
-
 def category_home(request, category_id=None):
     # Fetch all active categories
     categories = Category.objects.filter(is_active=True)
-    
     
     if category_id:
         category = get_object_or_404(Category, id=category_id, is_active=True)
@@ -181,8 +278,6 @@ def customer_dashboard(request):
     return render(request, 'customer/dashboard.html', context)
 
 # Add to Cart (Customer)
-@login_required
-
 def add_to_cart(request, product_id):
     cart = Cart(request)
     cart.add(product_id=product_id, quantity=1)
@@ -299,27 +394,38 @@ def update_user(request, user_id):
         form = UserUpdateForm(instance=user)
     return render(request, 'update_user.html', {'form': form})
 
-# Create Vendor
 def create_vendor(request):
+    """
+    View for creating a new vendor.
+    """
     if request.method == 'POST':
-        form = VendorForm(request.POST)
+        # Bind the form to the POST data
+        form = VendorRegistrationForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('vendor_list')
+            # Save the vendor and display a success message
+            vendor = form.save()
+            messages.success(request, f"Vendor '{vendor.store_name}' has been created successfully!")
+            return redirect('vendor_list')  # Redirect to the vendor list page
+        else:
+            # Display an error message if the form is invalid
+            messages.error(request, "Please correct the errors below.")
     else:
-        form = VendorForm()
+        # Display an empty form for GET requests
+        form = VendorRegistrationForm()
+
+    # Render the form in the template
     return render(request, 'create_vendor.html', {'form': form})
 
 # Update Vendor
 def update_vendor(request, vendor_id):
     vendor = get_object_or_404(Vendor, id=vendor_id)
     if request.method == 'POST':
-        form = VendorForm(request.POST, instance=vendor)
+        form = vendor_registration(request.POST, instance=vendor)
         if form.is_valid():
             form.save()
             return redirect('vendor_detail', vendor_id=vendor_id)
     else:
-        form = VendorForm(instance=vendor)
+        form = vendor_registration(instance=vendor)
     return render(request, 'update_vendor.html', {'form': form})
 
 # Create Customer

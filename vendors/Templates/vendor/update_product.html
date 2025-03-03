@@ -1,0 +1,53 @@
+<!-- update_product.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Update Product{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
+    <h1 class="text-3xl font-bold mb-6">Update Product</h1>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+
+        <!-- Product Form Fields -->
+        <div class="space-y-4">
+            {{ form.as_p }}
+        </div>
+
+        <!-- Existing Product Images -->
+        <div class="mt-6">
+            <h2 class="text-xl font-semibold mb-4">Existing Images</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {% for image in product.images.all %}
+                    <div class="relative border rounded-lg p-2">
+                        <img src="{{ image.image.url }}" alt="Product Image" class="w-full h-32 object-cover rounded-lg">
+                        <a href="{% url 'delete_product_image' image.id %}" class="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- New Product Image Upload -->
+        <div class="mt-6">
+            <label for="images" class="block text-sm font-medium text-gray-700">Upload New Images</label>
+            <input type="file" name="image" id="images" multiple class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2">
+            <p class="text-sm text-gray-500 mt-2">You can upload multiple images for the product.</p>
+        </div>
+
+        <!-- Submit and Cancel Buttons -->
+        <div class="mt-6">
+            <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-200">
+                Update Product
+            </button>
+            <a href="{% url 'vendor_dashboard' %}" class="ml-4 bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition duration-200">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

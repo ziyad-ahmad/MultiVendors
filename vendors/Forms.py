@@ -66,11 +66,17 @@ class UserUpdateForm(UserChangeForm):
         'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500',
         'placeholder': 'Address'
     }))
+from .models import Vendor, VendorDocument
 
-class VendorForm(forms.ModelForm):
+
+class VendorDocumentForm(forms.ModelForm):
+    class Meta:
+        model = VendorDocument
+        fields = ['document']
+class VendorRegistrationForm(forms.ModelForm):
     class Meta:
         model = Vendor
-        fields = ['store_name', 'business_details', 'location', 'logo_url', 'is_approved']
+        fields = ['store_name', 'business_details', 'location', 'logo_url']
     
     store_name = forms.CharField(widget=forms.TextInput(attrs={
         'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500',
@@ -93,9 +99,7 @@ class VendorForm(forms.ModelForm):
         'placeholder': 'Logo URL'
     }))
     
-    is_approved = forms.BooleanField(widget=forms.CheckboxInput(attrs={
-        'class': 'focus:ring-blue-500 text-blue-600'
-    }))
+   
 
 class CustomerForm(forms.ModelForm):
     class Meta:
@@ -115,18 +119,13 @@ class CustomerForm(forms.ModelForm):
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ['name', 'description', 'parent_category']
+        fields = ['name',  'parent_category']
     
     name = forms.CharField(widget=forms.TextInput(attrs={
         'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500',
         'placeholder': 'Category Name'
     }))
     
-    description = forms.CharField(widget=forms.Textarea(attrs={
-        'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500',
-        'placeholder': 'Category Description',
-        'rows': 4
-    }))
     
     parent_category = forms.ModelChoiceField(queryset=Category.objects.all(), widget=forms.Select(attrs={
         'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500'
@@ -169,6 +168,13 @@ class ProductForm(forms.ModelForm):
     
     categories = forms.ModelMultipleChoiceField(queryset=Category.objects.all(), widget=forms.SelectMultiple(attrs={
         'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500'
+    }))
+class ProductImageForm(forms.ModelForm):
+    class Meta:
+        model = ProductImage
+        fields = ['image']
+        image = forms.ImageField(widget=forms.FileInput(attrs={
+        'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500',
     }))
 
 class OrderForm(forms.ModelForm):

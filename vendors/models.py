@@ -37,11 +37,18 @@ class User(AbstractUser):
 
 
 class Vendor(models.Model):
+    STATUS_CHOICE = [
+        ('pending', 'Pending'),  # Actual value: 'pending', Display name: 'Pending'
+        ('approved', 'Approved'),  # Actual value: 'approved', Display name: 'Approved'
+        ('rejected', 'Rejected'),  # Actual value: 'rejected', Display name: 'Rejected'
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='vendor')
     store_name = models.CharField(max_length=100)
     business_details = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     logo_url = models.URLField(blank=True, null=True)
+    status = models.CharField(max_length=15, choices=STATUS_CHOICE, default='pending')  # Renamed to 'status'
     is_approved = models.BooleanField(default=False)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     total_sales = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
@@ -54,8 +61,14 @@ class Vendor(models.Model):
     def approve_vendor(self):
         """Approve the vendor."""
         self.is_approved = True
+        self.status = 'approved'  
         self.save()
 
+    def reject_vendor(self):
+        """Reject the vendor."""
+        self.is_approved = False
+        self.status = 'rejected'  
+        self.save()
 
 class VendorDocument(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='documents')
@@ -64,7 +77,6 @@ class VendorDocument(models.Model):
 
     def __str__(self):
         return f"Document for {self.vendor.store_name}"
-
 
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer')
