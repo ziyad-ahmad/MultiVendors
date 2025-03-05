@@ -2,11 +2,11 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from .views import (
-    genHome, register_user, update_user,
-    create_vendor, update_vendor,
+    genHome, register_user, update_user, custom_login, custom_register,normal_login,
+    create_vendor, update_vendor, normal_register, user_logout, 
     create_customer, update_customer,
-    create_product, update_product, category_home, 
-    create_order, update_order,
+    create_product, update_product, category_home, CustomPasswordChangeView,
+    create_order, update_order, search,
     admin_dashboard, admin_vendor_management, 
     vendor_dashboard, customer_dashboard,
     add_to_cart, checkout, cart_view, update_cart, remove_from_cart, product_detail
@@ -25,10 +25,17 @@ urlpatterns = [
     path('cart/update/<int:product_id>/', update_cart, name='update_cart'),
     path('cart/remove/<int:product_id>/', remove_from_cart, name='remove_from_cart'),
     path('checkout/', checkout, name='checkout'),
+    path('search/', search, name='search'),
 
     # User Authentication
     path('register/', register_user, name='register_user'),
+    path('custom-login/', custom_login, name='custom_login'),
+    path('custom-register/', custom_register, name='custom_register'),
+    path('normal-login/', normal_login, name='normal_login'),
+    path('normal-register/', normal_register, name='normal_register'),
     path('update/<int:user_id>/', update_user, name='update_user'),
+    path('logout/', user_logout, name='logout'),
+    path('change-password/', CustomPasswordChangeView.as_view(), name='change_password'),
 
     # Vendor URLs
     path('vendor/create/', create_vendor, name='create_vendor'),

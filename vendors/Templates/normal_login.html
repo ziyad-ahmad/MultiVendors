@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Normal Login{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-gray-50 items-center justify-center px-6 py-12 lg:px-8">
+  <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 space-y-8">
+    <!-- Logo and Title -->
+    <div class="flex flex-col items-center">
+      <img class="h-24 w-auto" src="" alt="Biyyo E-commerce">
+      <h2 class="mt-4 text-center text-3xl font-extrabold text-gray-900">Normal Login</h2>
+    </div>
+
+    <!-- Display Messages -->
+    {% if messages %}
+      <div class="mb-4">
+        {% for message in messages %}
+          <div class="text-red-600 text-sm">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Login Form -->
+    <form class="space-y-6" method="POST">
+      {% csrf_token %}
+      
+      <!-- Username Field -->
+      <div>
+        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+        <div class="mt-1">
+          <input id="username" name="username" type="text" autocomplete="username" required 
+                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none 
+                        focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm placeholder-gray-400">
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div>
+        <div class="flex items-center justify-between">
+          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+          <div class="text-sm">
+            <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+          </div>
+        </div>
+        <div class="mt-1">
+          <input id="password" name="password" type="password" autocomplete="current-password" required 
+                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none 
+                        focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm placeholder-gray-400">
+        </div>
+      </div>
+
+      <!-- Sign In Button -->
+      <div>
+        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md 
+                                   shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 
+                                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Sign in
+        </button>
+      </div>
+    </form>
+
+    <!-- Sign Up Link -->
+    <p class="mt-6 text-center text-sm text-gray-600">
+      No account? 
+      <a href="{% url 'normal_register' %}" class="font-medium text-indigo-600 hover:text-indigo-500">Sign Up</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

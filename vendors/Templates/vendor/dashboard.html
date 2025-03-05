@@ -2,22 +2,32 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Vendor Dashboard</h1>
+<div class="max-w-4xl mx-auto p-3 bg-white shadow-lg rounded-lg">
+    <div class = "mt-6 flex justify-end space-x-4">
+        <h3>sidebar</h3>
+        <h3> new product</h3>
+        <h3> order-product</h3>
+        
+    </div>
+    <dive class =" max-w-4xl mx-auto p-3 bg-white shadow-lg rounded-lg">
+        <h1>Vendor Dashboard</h1>
+        <h2>This is: {{vendors.username }}your Products</h2>
+        <ul>
+            {% for product in products %}
+            <li>{{ product.name }} - ${{ product.price }}</li>
+            {% endfor %}
+        </ul>
 
-<h2>Your Products</h2>
-<ul>
-    {% for product in products %}
-    <li>{{ product.name }} - ${{ product.price }}</li>
-    {% endfor %}
-</ul>
+        <h2>Your Orders</h2>
+        <ul>
+            {% for order in orders %}
+            <li>Order #{{ order.id }} - ${{ order.total_amount }}</li>
+            {% endfor %}
+        </ul>
 
-<h2>Your Orders</h2>
-<ul>
-    {% for order in orders %}
-    <li>Order #{{ order.id }} - ${{ order.total_amount }}</li>
-    {% endfor %}
-</ul>
+        <a href="{% url 'add_product' %}">Add Product</a>
+            </dive>
 
-<a href="{% url 'add_product' %}">Add Product</a>
+</div>
 {% endblock %}
 

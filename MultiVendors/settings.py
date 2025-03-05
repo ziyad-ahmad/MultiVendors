@@ -75,7 +75,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'MultiVendors.wsgi.application'
 
-
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  
+]
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
